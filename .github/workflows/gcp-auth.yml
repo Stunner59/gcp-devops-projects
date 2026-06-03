@@ -1,0 +1,45 @@
+name: GCP Workload Identity Federation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Authenticate to GCP
+    runs-on: ubuntu-latest
+
+    # IMPORTANT — this permission is required for OIDC
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify Authentication
+        run: |
+          gcloud auth list
+          gcloud config list project
+          echo "✅ Successfully authenticated to GCP without any keys!"
+
+      - name: List GCP Resources
+        run: |
+          echo "--- VPCs ---"
+          gcloud compute networks list
+          echo "--- Subnets ---"
+          gcloud compute networks subnets list --filter="region:asia-south1"
