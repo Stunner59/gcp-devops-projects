@@ -1,0 +1,77 @@
+---
+# Install Java
+- name: Install Java 17
+  apt:
+    name: openjdk-17-jdk
+    state: present
+    update_cache: yes
+
+# Add Jenkins repo
+- name: Add Jenkins GPG key
+  apt_key:
+    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    state: present
+
+- name: Add Jenkins repo
+  apt_repository:
+    repo: deb https://pkg.jenkins.io/debian-stable binary/
+    state: present
+
+# Install Jenkins
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: present
+    update_cache: yes
+
+# Install gcsfuse for mounting GCS bucket as Jenkins home
+- name: Add gcsfuse repo key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Add gcsfuse repo
+  apt_repository:
+    repo: deb https://packages.cloud.google.com/apt gcsfuse-bookworm main
+    state: present
+
+- name: Install gcsfuse
+  apt:
+    name: gcsfuse
+    state: present
+    update_cache: yes
+
+# Configure Jenkins
+- name: Create Jenkins home directory
+  file:
+    path: /var/lib/jenkins
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Copy Jenkins configuration
+  template:
+    src: jenkins.conf.j2
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    mode: '0644'
+  notify: restart jenkins
+
+# Install Jenkins plugins
+- name: Copy plugin installation script
+  copy:
+    src: install-plugins.sh
+    dest: /opt/install-plugins.sh
+    mode: '0755'
+
+# Enable and start Jenkins
+- name: Enable Jenkins service
+  systemd:
+    name: jenkins
+    enabled: yes
+    daemon_reload: yes
+
+- name: Start Jenkins service
+  systemd:
+    name: jenkins
+    state: started

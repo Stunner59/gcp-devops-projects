@@ -1,0 +1,10 @@
+---
+- name: Configure Jenkins HA Server
+  hosts: all
+  become: yes
+  vars:
+    jenkins_version: "latest"
+    gcs_bucket: "{{ lookup('env', 'PROJECT_ID') }}-jenkins-home"
+
+  roles:
+    - jenkins
