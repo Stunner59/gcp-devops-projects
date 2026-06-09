@@ -1,36 +1,36 @@
 ---
-# Install Java
+# Step 1 - Install Java (Jenkins needs it)
 - name: Install Java 17
   apt:
     name: openjdk-17-jdk
     state: present
     update_cache: yes
 
-# Add Jenkins repo
+# Step 2 - Add Jenkins repository
 - name: Add Jenkins GPG key
   apt_key:
     url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
     state: present
 
-- name: Add Jenkins repo
+- name: Add Jenkins apt repository
   apt_repository:
     repo: deb https://pkg.jenkins.io/debian-stable binary/
     state: present
 
-# Install Jenkins
+# Step 3 - Install Jenkins
 - name: Install Jenkins
   apt:
     name: jenkins
     state: present
     update_cache: yes
 
-# Install gcsfuse for mounting GCS bucket as Jenkins home
-- name: Add gcsfuse repo key
+# Step 4 - Install gcsfuse (mounts GCS bucket as Jenkins home)
+- name: Add gcsfuse GPG key
   apt_key:
     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
     state: present
 
-- name: Add gcsfuse repo
+- name: Add gcsfuse repository
   apt_repository:
     repo: deb https://packages.cloud.google.com/apt gcsfuse-bookworm main
     state: present
@@ -41,7 +41,7 @@
     state: present
     update_cache: yes
 
-# Configure Jenkins
+# Step 5 - Create Jenkins home directory
 - name: Create Jenkins home directory
   file:
     path: /var/lib/jenkins
@@ -50,28 +50,25 @@
     group: jenkins
     mode: '0755'
 
-- name: Copy Jenkins configuration
+# Step 6 - Copy systemd override config
+- name: Create systemd override directory
+  file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: '0755'
+
+- name: Copy Jenkins systemd override
   template:
     src: jenkins.conf.j2
     dest: /etc/systemd/system/jenkins.service.d/override.conf
     mode: '0644'
   notify: restart jenkins
 
-# Install Jenkins plugins
-- name: Copy plugin installation script
-  copy:
-    src: install-plugins.sh
-    dest: /opt/install-plugins.sh
-    mode: '0755'
-
-# Enable and start Jenkins
-- name: Enable Jenkins service
+# Step 7 - Enable and start Jenkins
+- name: Enable and start Jenkins
   systemd:
     name: jenkins
     enabled: yes
+    state: started
     daemon_reload: yes
 
-- name: Start Jenkins service
-  systemd:
-    name: jenkins
-    state: started

@@ -15,11 +15,6 @@ variable "project_id" {
   type = string
 }
 
-variable "region" {
-  type    = string
-  default = "asia-south1"
-}
-
 variable "zone" {
   type    = string
   default = "asia-south1-a"
@@ -49,12 +44,14 @@ build {
   name    = "jenkins-ha"
   sources = ["source.googlecompute.jenkins"]
 
+  # Wait for VM to fully boot
   provisioner "shell" {
     inline = [
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 2; done"
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for boot...'; sleep 2; done"
     ]
   }
 
+  # Run Ansible to install Jenkins
   provisioner "ansible" {
     playbook_file = "../ansible/playbook.yml"
     extra_arguments = [
@@ -63,6 +60,7 @@ build {
     ]
   }
 
+  # Save image details to manifest
   post-processor "manifest" {
     output     = "manifest.json"
     strip_path = true
